@@ -1,27 +1,51 @@
 ---
 name: simulator-visual-proof
-description: Capture, inspect, and present screenshot or video proof from a running iOS Simulator app. Use after visual UI changes, animation or interaction changes, simulator QA, or whenever the user asks to see proof of an iOS change. Make a best-effort screenshot for visual changes and use video when motion, transitions, gestures, or multi-step behavior matter.
+description: Autonomously plan, capture, inspect, reject, and present screenshot or video proof from a running iOS Simulator app. Use after visual UI changes, animation or interaction changes, simulator QA, or whenever proof of an iOS change is useful. Infer the strongest useful proof without asking the user to direct the capture, stage meaningful real app state, and self-review every artifact before presenting it.
 ---
 
 # Simulator Visual Proof
 
-## Choose the simulator
+## Operate autonomously
 
-List booted devices and select the exact UDID that owns the app under test:
+Own the evidence workflow. Do not ask the user which screen to capture, how long a video should be, whether a take looks good, or whether to retry. Infer those decisions from the change, the app, and the requested outcome. Ask only when product intent is genuinely ambiguous or reaching the state requires credentials, destructive actions, or authority the user has not supplied.
+
+Treat every artifact as a test result. Never present the first take merely because a file exists. Inspect it, reject it when necessary, and retry independently. Capture is a strong default rather than a hard completion gate; after reasonable retries, report an honest tooling or state blocker with the strongest available evidence.
+
+## Define the proof contract
+
+Before touching the recorder, write a one-sentence internal contract containing:
+
+- **Claim:** the exact appearance or behavior being proved.
+- **Start:** the recognizable state the viewer should see first.
+- **Actions:** the shortest natural interaction sequence.
+- **Finish:** the visible result that makes success unambiguous.
+- **Evidence:** screenshot for appearance; video plus final screenshot for motion or multi-step behavior.
+
+Infer unspecified details. Prefer the device already used by the build workflow, representative real data, the shortest route from a familiar screen, and a final state containing enough context to identify what changed.
+
+## Choose and prepare the simulator
+
+List booted devices:
 
 ```bash
 xcrun simctl list devices booted
 ```
 
-Never use the `booted` alias when more than one simulator is running. Reuse the simulator selected by the build/run workflow.
+Use the exact UDID that owns the app under test. Never use `booted` when multiple simulators are running. Reuse the build/run device; otherwise choose the most relevant booted device without asking.
 
-## Reach the changed state
+Preflight the app before recording:
 
-Build, launch, and navigate the real app to the changed screen. Use real available data; do not fabricate content merely to make proof look complete. Wait for loading and animation to settle before capturing a final-state screenshot.
+1. Launch or foreground the real app.
+2. Inspect accessibility state and a screenshot.
+3. Select the correct season, account, team, fixture, feature flag, orientation, and data context implied by the claim.
+4. Prefer meaningful existing data over empty states when both are available. Never fabricate data or silently change product state merely for prettier proof.
+5. Navigate to the exact starting state and clear stale searches, sheets, keyboards, scroll positions, alerts, and previous navigation.
+6. Rehearse the route once without recording. Resolve dynamic button coordinates from fresh accessibility state after scrolling or navigation.
+7. Confirm the finish state is reachable and contains the expected data before making the final take.
+
+If the intended result needs loaded data, wait for the actual content rather than accepting a skeleton, spinner, stale season, or empty state. A technically correct route through the wrong data context is failed proof.
 
 ## Capture a screenshot
-
-Use the bundled script with an exact device UDID and absolute output path:
 
 ```bash
 <skill-root>/scripts/capture.sh screenshot \
@@ -29,62 +53,72 @@ Use the bundled script with an exact device UDID and absolute output path:
   --output "/tmp/codex-visual-proof/<descriptive-name>.png"
 ```
 
-The script wakes the display, writes atomically, and rejects missing or unreadable output.
+Open the PNG with the image-viewing tool. Reject and recapture if it is blank, loading, stale, clipped, obscured, incorrectly themed or oriented, missing the claimed result, or showing unrelated sensitive content. Inspect safe areas, contrast, overlap, keyboard/sheet state, and enough surrounding context to identify the screen.
 
-Open the PNG with the available image-viewing tool. Check that it shows the intended screen and inspect clipping, overlap, contrast, safe areas, stale data, loading/error states, and accidental regressions. Recapture after fixing any problem.
+## Record interaction proof
 
-If the inspected PNG is blank or black, confirm that the intended app is foregrounded and recapture. A technically valid but blank image is failed proof.
-
-## Record a video
-
-Use video to show the agent actually operating the app: tapping controls, typing, scrolling, navigating, exercising animations, and completing multi-step flows. First navigate to a sensible starting state and inspect the UI so the interaction path is known.
-
-Start the capture in a long-running terminal session that can yield while it remains active:
+Use video for navigation, typing, gestures, transitions, animations, or multi-step behavior. Start only after the simulator is staged at the contract's Start state.
 
 ```bash
 <skill-root>/scripts/capture.sh video \
   --device "<simulator-udid>" \
   --output "/tmp/codex-visual-proof/<descriptive-name>.mp4" \
-  --duration 20 \
-  --poster "/tmp/codex-visual-proof/<descriptive-name>-poster.png"
+  --duration 30 \
+  --stop-on-enter
 ```
 
-Wait until the terminal prints `RECORDING_STARTED`. While that same recording session remains active, use the simulator UI tools to perform the shortest clear demonstration:
+Treat `--duration` as a safety timeout. After `RECORDING_STARTED`:
 
-1. Describe the current UI before tapping.
-2. Tap by accessibility identifier or label when possible.
-3. Type, swipe, scroll, or navigate through the requested behavior.
-4. Pause briefly on the final state so it is readable.
-5. Wait for the recording command to finish and finalize the MP4.
+1. Hold Start for roughly one second so it is recognizable.
+2. Perform the shortest natural flow immediately, using accessibility labels or identifiers when possible.
+3. Pause only where the viewer needs to read typed text or a result.
+4. Wait for real content to replace loading UI.
+5. Hold Finish for one to two seconds, then send Enter immediately.
 
-Prefer XcodeBuildMCP accessibility-based snapshot, tap, gesture, and typing tools when enabled. Otherwise use the available iOS Simulator UI automation tools. If interactive tools are unavailable, a focused UI test may drive the same real app flow while the recorder runs. Do not substitute app relaunches or unrelated system activity for the requested interaction.
+Prefer XcodeBuildMCP accessibility tools, then other available simulator automation, then a focused UI test. Do not use guessed coordinates after content has moved; refresh accessibility state and tap the center of the target frame.
 
-The script sends `SIGINT` to `simctl`, waits for finalization, validates the movie, and optionally creates a poster frame. Choose a duration from 1 to 60 seconds that leaves enough time for tool round trips. Do not record idle simulator footage and call it interaction proof.
+Ordinary proof should be concise: about 3–12 seconds for a focused action and only as long as the visible user flow genuinely requires. A timeout-filled video, idle simulator footage, setup activity, or a jump that omits the claimed action is failed proof.
 
-If a tool call takes longer than expected, repeat the recording with a longer duration rather than rushing or omitting the important action. Keep sensitive text, notifications, credentials, and unrelated user data out of the recording.
+## Review and retry without user feedback
 
-The script validates that the file is non-empty and readable. For additional metadata when needed:
+Run the bundled reviewer after every video:
 
 ```bash
-test -s "/tmp/codex-visual-proof/<descriptive-name>.mp4"
-xcrun simctl list devices | rg "<simulator-udid>"
-mdls -name kMDItemDurationSeconds -name kMDItemPixelHeight -name kMDItemPixelWidth \
-  "/tmp/codex-visual-proof/<descriptive-name>.mp4"
+<skill-root>/scripts/review.sh video \
+  --input "/tmp/codex-visual-proof/<descriptive-name>.mp4" \
+  --output-dir "/tmp/codex-visual-proof/<descriptive-name>-review" \
+  --target-max-seconds 12
 ```
 
-Inspect representative frames with the available video/image tooling. Re-record if the interaction is missing, obscured, or begins/ends in the wrong state.
+Open the generated contact sheet and start, middle, and end frames. Then watch the entire video. Sampled frames never replace full playback.
 
-## Troubleshoot
+Accept only when all are true:
 
-- `simulator is not booted`: use `xcrun simctl list devices booted` and pass the exact active UDID.
-- Blank capture: foreground the app, ensure the screen is unlocked, and retry.
-- Recording does not start: run `xcrun simctl io <UDID> enumerate` and confirm the display exists.
-- UI automation reports a missing helper such as `spawn idb ENOENT`: try the XcodeBuildMCP UI tools or a focused UI test; if neither is available, report interaction proof as blocked rather than presenting idle footage.
-- UI cannot reach the changed state: report the navigation, data, authentication, or runtime blocker rather than staging fake proof.
-- Multiple simulators are booted: never substitute the `booted` alias; keep using the build workflow's explicit UDID.
+- Start matches the proof contract and lasts no longer than needed.
+- Every claimed action is visibly performed in the correct order.
+- Typing shows the intended final text, not stale or appended input.
+- Dynamic taps open the intended destination.
+- Loading finishes and Finish visibly proves the claim with the correct data context.
+- There are no blank, corrupt, frozen, private, or unrelated frames.
+- The clip contains at most about one second of avoidable idle time at either end.
+- The final screenshot independently matches Finish.
 
-## Present proof
+Reject the take and retry autonomously when any criterion fails. Make up to three meaningfully improved takes by correcting staging, accessibility targeting, timing, recorder backend, or data context. Prefer a clean re-recording. Trim only incidental recorder latency at the boundaries; never remove a failed action, manufacture continuity, replace a missing interaction with a still, or imply that stitched segments are continuous. If truthful stitching is unavoidable because the recorder drops a transition, disclose it and ensure every segment is real captured interaction.
 
-Show the screenshot or poster inline with an absolute local path. Link the playable MP4 with an absolute local path so Henry can watch the agent perform the flow. State the simulator model, the actions shown, the screen or behavior proved, and any state that could not be reached. A build log, source diff, idle recording, or uninspected artifact is not interaction proof.
+Do not show rejected takes or ask the user to grade them. The user should see only accepted proof or a concise blocker report.
 
-Treat capture as a strong default, not a hard gate. If simulator capture is unavailable or disproportionate, report why and state the strongest visual or non-visual verification completed instead.
+## Troubleshoot independently
+
+- Blank capture: foreground the intended app, unlock the simulator, and retry.
+- Stale or empty data: verify season/account/team/filter context and wait for loading; use another meaningful real fixture when consistent with the claim.
+- Recorder exits early: reject the file even if it is readable; use another recorder backend when available.
+- Recorder buffers stale frames: re-record with a settle period, verify the full timeline, and prefer a backend that follows live UI updates.
+- `spawn idb ENOENT`: try XcodeBuildMCP, the installed IDB Python module/companion, or a focused UI test.
+- Multiple booted simulators: continue with the exact build device UDID.
+- State cannot be reached after bounded retries: report the exact navigation, authentication, data, or tooling blocker without staging fake proof.
+
+## Present accepted proof
+
+Show the final screenshot or poster inline using an absolute path and link the playable MP4 using an absolute path. State the simulator model, the short action sequence, the result proved, and any material limitation. Do not narrate failed takes unless they expose a genuine remaining limitation.
+
+A build log, source diff, unreviewed artifact, loading screen, idle recording, or technically valid file that does not prove the claim is not visual proof.

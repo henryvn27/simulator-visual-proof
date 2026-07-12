@@ -15,9 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate shell scripts
-        run: bash -n scripts/capture.sh tests/test_capture.sh
+        run: bash -n scripts/capture.sh scripts/review.sh tests/test_capture.sh tests/test_review.sh
       - name: Run safety tests
-        run: tests/test_capture.sh
+        run: |
+          tests/test_capture.sh
+          tests/test_review.sh
       - name: Validate skill metadata
         run: |
           ruby -e '

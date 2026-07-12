@@ -1,5 +1,11 @@
 <p align="center">
-  <img src="assets/hero.svg" alt="Simulator Visual Proof — make your agent show its work" width="100%">
+  <a href="assets/pushback-cuties-analytics-demo.mp4">
+    <img src="assets/pushback-cuties-analytics-poster.png" alt="Simulator Visual Proof navigating Scoutly from Home to populated Push Back analytics" width="420">
+  </a>
+</p>
+
+<p align="center">
+  <a href="assets/pushback-cuties-analytics-demo.mp4"><strong>▶ Watch the agent prove it in Scoutly (15 seconds)</strong></a>
 </p>
 
 <p align="center">
@@ -13,7 +19,7 @@
 
 <p align="center"><strong>Your agent changed the iOS app. Now watch it prove it.</strong></p>
 
-An open [Agent Skill](https://agentskills.io) that records an AI coding agent operating your app in iOS Simulator—taps, typing, navigation, gestures, animations, and the final result. It produces an inspected screenshot, a finalized H.264 video, and an optional poster frame you can review directly in the agent conversation.
+An open [Agent Skill](https://agentskills.io) that autonomously plans, records, rejects, and presents proof of an AI coding agent operating your app in iOS Simulator—taps, typing, navigation, gestures, animations, and the final result. It stages meaningful real data, reviews its own artifacts, retries bad takes, and shows you only accepted proof.
 
 ```bash
 npx skills add henryvn27/simulator-visual-proof -g
@@ -23,14 +29,15 @@ npx skills add henryvn27/simulator-visual-proof -g
 
 Without this skill, visual verification often ends at “the build passed.” With it, the agent is taught to:
 
-1. Launch the real app and reach the changed screen.
-2. Start recording and wait for the first live frame.
-3. Actually operate the app while the recorder runs.
-4. Inspect the resulting evidence instead of trusting file existence.
-5. Show you the screenshot or poster and a playable MP4.
+1. Infer the strongest proof from the change.
+2. Stage the real app with the correct account, season, team, and data.
+3. Rehearse and record the shortest natural interaction.
+4. Inspect the complete timeline instead of trusting file existence.
+5. Reject bad takes and retry without asking the user to direct it.
+6. Show only the accepted screenshot and playable MP4.
 
 ```text
-build → launch → RECORDING_STARTED → tap / type / swipe → inspect → show proof
+infer → stage → rehearse → record → inspect → reject or present
 ```
 
 Idle footage is not interaction proof. A blank screenshot is not visual proof. The skill says so explicitly.
@@ -77,7 +84,7 @@ git clone https://github.com/henryvn27/simulator-visual-proof.git \
 - A booted iOS Simulator
 - An agent environment capable of simulator interaction, such as XcodeBuildMCP UI automation, iOS Simulator tooling, Computer Use, or a focused XCUITest
 
-The capture path has no package dependencies. It uses Apple-native `xcrun simctl`, `file`, and Quick Look.
+The capture path has no package dependencies. It uses Apple-native `xcrun simctl`, `file`, and Quick Look. The optional deterministic video-review helper uses `ffmpeg` to generate timeline frames and contact sheets.
 
 ## How recording works
 
@@ -88,6 +95,7 @@ The included recorder is also usable directly:
   --device "<simulator-udid>" \
   --output "/tmp/codex-visual-proof/checkout-flow.mp4" \
   --duration 20 \
+  --stop-on-enter \
   --poster "/tmp/codex-visual-proof/checkout-flow-poster.png"
 ```
 
@@ -110,6 +118,15 @@ Screenshots use the same safety path:
   --output "/tmp/codex-visual-proof/final-state.png"
 ```
 
+Review every finished video before presenting it:
+
+```bash
+./scripts/review.sh video \
+  --input "/tmp/codex-visual-proof/checkout-flow.mp4" \
+  --output-dir "/tmp/codex-visual-proof/checkout-flow-review" \
+  --target-max-seconds 12
+```
+
 ## Honest boundaries
 
 This skill is a proof workflow, not an interaction driver. It coordinates recording with whichever simulator-control tools the agent already has.
@@ -130,6 +147,7 @@ Simulator recordings can still contain sensitive information. The skill instruct
 ```bash
 # Fast safety and argument tests
 tests/test_capture.sh
+tests/test_review.sh
 
 # Full screenshot + video + poster integration test
 SIMULATOR_UDID="<booted-simulator-udid>" tests/test_capture.sh
@@ -142,7 +160,9 @@ The GitHub workflow runs the portable suite on macOS. The live test remains opt-
 ```text
 SKILL.md                  Agent instructions and verification policy
 scripts/capture.sh        Dependency-free screenshot/video recorder
+scripts/review.sh         Duration and whole-timeline review artifacts
 tests/test_capture.sh     Fast tests plus optional live integration test
+tests/test_review.sh      Portable deterministic reviewer tests
 agents/openai.yaml        Skill-list metadata
 ```
 

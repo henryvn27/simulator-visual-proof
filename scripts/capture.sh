@@ -5,12 +5,14 @@ usage() {
   cat <<'EOF'
 Usage:
   capture.sh screenshot --device <UDID> --output <file.png>
-  capture.sh video --device <UDID> --output <file.mp4> [--duration <seconds>] [--poster <file.png>]
+  capture.sh video --device <UDID> --output <file.mp4> [--duration <seconds>] [--stop-on-enter] [--poster <file.png>]
 
 Options:
   --device    Exact UDID of a booted iOS Simulator.
   --output    Absolute output path.
-  --duration  Video length in seconds (default: 8, maximum: 60).
+  --duration  Safety timeout in seconds (default: 8, maximum: 60).
+  --stop-on-enter
+              Stop as soon as Enter is pressed; use this for action-cued proof.
   --poster    Optional PNG preview generated from the finished video.
 EOF
 }
@@ -32,12 +34,14 @@ device=""
 output=""
 duration="8"
 poster=""
+stop_on_enter=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --device) [[ $# -ge 2 ]] || die '--device requires a value'; device="$2"; shift 2 ;;
     --output) [[ $# -ge 2 ]] || die '--output requires a value'; output="$2"; shift 2 ;;
     --duration) [[ $# -ge 2 ]] || die '--duration requires a value'; duration="$2"; shift 2 ;;
+    --stop-on-enter) stop_on_enter=1; shift ;;
     --poster) [[ $# -ge 2 ]] || die '--poster requires a value'; poster="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) die "unknown argument: $1" ;;
@@ -104,7 +108,13 @@ done
 (( started == 1 )) || { cat "$log" >&2; die 'recording did not start'; }
 printf 'RECORDING_STARTED %s\n' "$output"
 
-sleep "$duration"
+if (( stop_on_enter == 1 )); then
+  printf 'Perform the action now; press Enter immediately after the final state is readable.\n'
+  read -r -t "$duration" _ || true
+else
+  sleep "$duration"
+fi
+kill -0 "$pid" 2>/dev/null || { cat "$log" >&2; die 'recorder exited before capture was stopped'; }
 kill -INT "$pid"
 wait "$pid"
 pid=""
