@@ -1,0 +1,31 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  portable:
+    runs-on: macos-14
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate shell scripts
+        run: bash -n scripts/capture.sh tests/test_capture.sh
+      - name: Run safety tests
+        run: tests/test_capture.sh
+      - name: Validate skill metadata
+        run: |
+          ruby -e '
+            require "yaml"
+            text = File.read("SKILL.md")
+            frontmatter = text.match(/\A---\n(.*?)\n---\n/m) or abort "missing frontmatter"
+            metadata = YAML.safe_load(frontmatter[1])
+            abort "invalid frontmatter keys" unless metadata.keys.sort == %w[description name]
+            abort "wrong skill name" unless metadata["name"] == "simulator-visual-proof"
+            YAML.safe_load(File.read("agents/openai.yaml"))
+          '
