@@ -1,11 +1,9 @@
 <p align="center">
-  <a href="assets/pushback-cuties-analytics-demo.mp4">
-    <img src="assets/pushback-cuties-analytics-poster.png" alt="Simulator Visual Proof navigating Scoutly from Home to populated Push Back analytics" width="420">
-  </a>
+  <img src="assets/pushback-cuties-analytics-demo.gif" alt="Simulator Visual Proof navigating Scoutly from Home to populated Push Back analytics" width="420">
 </p>
 
 <p align="center">
-  <a href="assets/pushback-cuties-analytics-demo.mp4"><strong>▶ Watch the agent prove it in Scoutly (15 seconds)</strong></a>
+  <strong>Inline proof: the action plays directly on GitHub—no video player required.</strong>
 </p>
 
 <p align="center">
@@ -34,7 +32,7 @@ Without this skill, visual verification often ends at “the build passed.” Wi
 3. Rehearse and record the shortest natural interaction.
 4. Inspect the complete timeline instead of trusting file existence.
 5. Reject bad takes and retry without asking the user to direct it.
-6. Show only the accepted screenshot and playable MP4.
+6. Show an inline animated proof, storyboard, and final screenshot; keep MP4 as optional raw evidence.
 
 ```text
 infer → stage → rehearse → record → inspect → reject or present
@@ -48,7 +46,7 @@ After installation, ask your agent:
 
 ```text
 Use simulator-visual-proof. Open the changed flow in the iOS Simulator,
-record yourself exercising it, inspect the result, and show me the video.
+exercise it, inspect the result, and show me inline proof plus the final screenshot.
 ```
 
 Or make it part of your repository policy:
@@ -118,7 +116,7 @@ Screenshots use the same safety path:
   --output "/tmp/codex-visual-proof/final-state.png"
 ```
 
-Review every finished video before presenting it:
+Turn every source recording into directly inspectable proof before presenting it:
 
 ```bash
 ./scripts/review.sh video \
@@ -126,6 +124,8 @@ Review every finished video before presenting it:
   --output-dir "/tmp/codex-visual-proof/checkout-flow-review" \
   --target-max-seconds 12
 ```
+
+This produces `proof.gif` for inline display, `contact-sheet.png` for frame-by-frame inspection, start/middle/end frames, and structured review metadata. The MP4 is retained only as the raw capture source.
 
 Create a proof contract and check the final accessibility state:
 
@@ -178,7 +178,7 @@ The GitHub workflow runs the portable suite on macOS. The live test remains opt-
 ```text
 SKILL.md                  Agent instructions and verification policy
 scripts/capture.sh        Dependency-free screenshot/video recorder
-scripts/review.sh         Duration and whole-timeline review artifacts
+scripts/review.sh         Inline GIF, storyboard, and review artifacts
 scripts/proofctl.py       Proof contracts, state checks, and action logs
 tests/test_capture.sh     Fast tests plus optional live integration test
 tests/test_review.sh      Portable deterministic reviewer tests

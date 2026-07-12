@@ -25,6 +25,8 @@ if command -v ffmpeg >/dev/null; then
   output="$($review video --input "$tmp/input.mp4" --output-dir "$tmp/review" --target-max-seconds 1)"
   grep -q 'exceeds target' <<<"$output"
   test -s "$tmp/review/contact-sheet.png"
+  test -s "$tmp/review/proof.gif"
+  file "$tmp/review/proof.gif" | grep -q 'GIF image data'
   test -s "$tmp/review/start.png"
   test -s "$tmp/review/middle.png"
   test -s "$tmp/review/end.png"
@@ -36,6 +38,8 @@ with open(sys.argv[1]) as handle:
     review = json.load(handle)
 assert review["decision"] == "review_required"
 assert review["duration_within_target"] is False
+assert review["primary_presentation"] == "proof.gif"
+assert review["storyboard"] == "contact-sheet.png"
 PY
 fi
 

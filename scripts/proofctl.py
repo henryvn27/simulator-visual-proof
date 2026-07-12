@@ -108,6 +108,7 @@ def command_complete(args):
     if evidence in ("video", "video+screenshot"):
         required.append(("video", args.video))
         required.append(("review", args.review))
+        required.append(("preview", args.preview))
     for name, path in required:
         if path is None:
             raise SystemExit(f"error: {name} is required by the proof contract")
@@ -118,6 +119,7 @@ def command_complete(args):
     contract["artifacts"] = {
         "screenshot": str(args.screenshot) if args.screenshot else None,
         "video": str(args.video) if args.video else None,
+        "preview": str(args.preview) if args.preview else None,
         "review": str(args.review) if args.review else None,
     }
     write_json(args.plan, contract)
@@ -152,6 +154,7 @@ def build_parser():
     complete.add_argument("--plan", type=absolute_path, required=True)
     complete.add_argument("--screenshot", type=absolute_path)
     complete.add_argument("--video", type=absolute_path)
+    complete.add_argument("--preview", type=absolute_path)
     complete.add_argument("--review", type=absolute_path)
     complete.set_defaults(function=command_complete)
     return root

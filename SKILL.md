@@ -1,6 +1,6 @@
 ---
 name: simulator-visual-proof
-description: Autonomously plan, capture, inspect, reject, and present screenshot or video proof from a running iOS Simulator app. Use after visual UI changes, animation or interaction changes, simulator QA, or whenever proof of an iOS change is useful. Infer the strongest useful proof without asking the user to direct the capture, stage meaningful real app state, and self-review every artifact before presenting it.
+description: Autonomously plan, capture, inspect, reject, and present screenshot, animated proof, and storyboard evidence from a running iOS Simulator app. Use after visual UI changes, animation or interaction changes, simulator QA, or whenever proof of an iOS change is useful. Infer the strongest useful proof without asking the user to direct the capture, stage meaningful real app state, and self-review every artifact before presenting it.
 ---
 
 # Simulator Visual Proof
@@ -33,7 +33,7 @@ Encode:
 - **Start:** the recognizable state the viewer should see first.
 - **Actions:** the shortest natural interaction sequence.
 - **Finish:** the visible result that makes success unambiguous.
-- **Evidence:** screenshot for appearance; video plus final screenshot for motion or multi-step behavior.
+- **Evidence:** screenshot for appearance; inline animated proof, storyboard, and final screenshot for motion or multi-step behavior. Treat the MP4 as a raw capture source, not the primary user-facing artifact.
 
 Infer unspecified details. Prefer the device already used by the build workflow, representative real data, the shortest route from a familiar screen, and a final state containing enough context to identify what changed.
 
@@ -80,7 +80,7 @@ If the intended result needs loaded data, wait for the actual content rather tha
 
 Open the PNG with the image-viewing tool. Reject and recapture if it is blank, loading, stale, clipped, obscured, incorrectly themed or oriented, missing the claimed result, or showing unrelated sensitive content. Inspect safe areas, contrast, overlap, keyboard/sheet state, and enough surrounding context to identify the screen.
 
-## Record interaction proof
+## Capture interaction source
 
 Use video for navigation, typing, gestures, transitions, animations, or multi-step behavior. Start only after the simulator is staged at the contract's Start state.
 
@@ -114,7 +114,7 @@ Ordinary proof should be concise: about 3–12 seconds for a focused action and 
 
 ## Review and retry without user feedback
 
-Run the bundled reviewer after every video:
+Run the bundled reviewer after every source recording. It creates `proof.gif` for inline presentation and `contact-sheet.png` for playback-free inspection:
 
 ```bash
 <skill-root>/scripts/review.sh video \
@@ -123,7 +123,7 @@ Run the bundled reviewer after every video:
   --target-max-seconds 12
 ```
 
-Open the generated contact sheet and start, middle, and end frames. Then watch the entire video. Sampled frames never replace full playback.
+Open `proof.gif`, `contact-sheet.png`, and the start, middle, and end frames. Inspect the complete source recording when playback works; the storyboard remains independently reviewable when MP4 playback does not. Sampled frames never excuse missing actions.
 
 Accept only when all are true:
 
@@ -147,6 +147,7 @@ After full playback and semantic state checks pass, mark the accepted artifacts:
   --plan "/tmp/codex-visual-proof/<name>/proof.json" \
   --screenshot "/tmp/codex-visual-proof/<name>/finish.png" \
   --video "/tmp/codex-visual-proof/<name>/interaction.mp4" \
+  --preview "/tmp/codex-visual-proof/<name>/review/proof.gif" \
   --review "/tmp/codex-visual-proof/<name>/review/review.json"
 ```
 
@@ -162,6 +163,6 @@ After full playback and semantic state checks pass, mark the accepted artifacts:
 
 ## Present accepted proof
 
-Show the final screenshot or poster inline using an absolute path and link the playable MP4 using an absolute path. State the simulator model, the short action sequence, the result proved, and any material limitation. Do not narrate failed takes unless they expose a genuine remaining limitation.
+Show `proof.gif` inline using an absolute path for interaction evidence, followed by the final full-resolution screenshot. Include the storyboard when the GIF is too fast, too large, or unsupported. Link the MP4 only as an optional raw artifact; never make it the sole or primary proof. State the simulator model, the short action sequence, the result proved, and any material limitation. Do not narrate failed takes unless they expose a genuine remaining limitation.
 
 A build log, source diff, unreviewed artifact, loading screen, idle recording, or technically valid file that does not prove the claim is not visual proof.

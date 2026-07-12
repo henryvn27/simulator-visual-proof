@@ -6,7 +6,8 @@ usage() {
 Usage:
   review.sh video --input <file.mp4> --output-dir <directory> [--target-max-seconds <seconds>]
 
-Generates deterministic review artifacts. The agent must still watch the full video.
+Generates an inline animated proof, storyboard, and deterministic review artifacts.
+The agent must still inspect the complete source timeline.
 EOF
 }
 
@@ -51,6 +52,9 @@ ffmpeg -y -ss "$midpoint" -i "$input" -frames:v 1 "$output_dir/middle.png" >/dev
 ffmpeg -y -ss "$endpoint" -i "$input" -frames:v 1 "$output_dir/end.png" >/dev/null 2>&1
 sample_rate="$(awk -v d="$duration" 'BEGIN { r=16/d; if (r>2) r=2; printf "%.6f", r }')"
 ffmpeg -y -i "$input" -vf "fps=$sample_rate,scale=240:-1,tile=4x4" -frames:v 1 "$output_dir/contact-sheet.png" >/dev/null 2>&1
+ffmpeg -y -i "$input" -filter_complex \
+  "fps=8,scale=420:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=bayer:bayer_scale=3" \
+  -loop 0 "$output_dir/proof.gif" >/dev/null 2>&1
 
 warning="none"
 if awk -v d="$duration" -v m="$target_max" 'BEGIN { exit !(d > m) }'; then
@@ -74,6 +78,8 @@ with open(path, "w") as handle:
                "target_max_seconds": float(target),
                "duration_within_target": float(duration) <= float(target),
                "warning": warning, "requires_full_playback": True,
+               "primary_presentation": "proof.gif",
+               "storyboard": "contact-sheet.png",
                "decision": "review_required"}, handle, indent=2, sort_keys=True)
     handle.write("\n")
 PY
@@ -81,6 +87,7 @@ PY
 printf 'duration_seconds=%s\n' "$duration"
 printf 'warning=%s\n' "$warning"
 printf 'contact_sheet=%s\n' "$output_dir/contact-sheet.png"
+printf 'animated_proof=%s\n' "$output_dir/proof.gif"
 printf 'start_frame=%s\n' "$output_dir/start.png"
 printf 'middle_frame=%s\n' "$output_dir/middle.png"
 printf 'end_frame=%s\n' "$output_dir/end.png"

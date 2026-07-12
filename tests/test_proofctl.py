@@ -31,11 +31,12 @@ class ProofControlTests(unittest.TestCase):
             self.run_tool("log", "--plan", str(plan), "--event", "tap", "--detail", "Analytics")
             screenshot = root / "proof.png"
             video = root / "proof.mp4"
+            preview = root / "proof.gif"
             review = root / "review.json"
-            for artifact in (screenshot, video, review):
+            for artifact in (screenshot, video, preview, review):
                 artifact.write_text("proof")
             self.run_tool("complete", "--plan", str(plan), "--screenshot", str(screenshot),
-                          "--video", str(video), "--review", str(review))
+                          "--video", str(video), "--preview", str(preview), "--review", str(review))
             contract = json.loads(plan.read_text())
             self.assertEqual(contract["status"], "accepted")
             self.assertEqual(contract["events"][0]["detail"], "Analytics")
