@@ -25,3 +25,20 @@ expect_failure "$capture" screenshot --device 00000000-0000-0000-0000-0000000000
 grep -q -- 'absolute path' "$tmp/stderr"
 
 printf 'capture argument tests passed\n'
+
+if [[ -n "${SIMULATOR_UDID:-}" ]]; then
+  "$capture" screenshot \
+    --device "$SIMULATOR_UDID" \
+    --output "$tmp/integration.png" >/dev/null
+  "$capture" video \
+    --device "$SIMULATOR_UDID" \
+    --output "$tmp/integration.mp4" \
+    --duration 1 \
+    --poster "$tmp/integration-poster.png" >/dev/null
+  file "$tmp/integration.png" | grep -q 'PNG image data'
+  file "$tmp/integration.mp4" | grep -Eq 'QuickTime|ISO Media'
+  file "$tmp/integration-poster.png" | grep -q 'PNG image data'
+  printf 'live simulator integration tests passed\n'
+else
+  printf 'live simulator integration tests skipped (set SIMULATOR_UDID to enable)\n'
+fi
