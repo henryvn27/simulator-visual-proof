@@ -64,9 +64,24 @@ warning=$warning
 required_manual_review=watch the entire video and verify the proof contract
 EOF
 
+python3 - "$output_dir/review.json" "$duration" "$target_max" "$warning" <<'PY'
+import json
+import sys
+
+path, duration, target, warning = sys.argv[1:]
+with open(path, "w") as handle:
+    json.dump({"duration_seconds": float(duration),
+               "target_max_seconds": float(target),
+               "duration_within_target": float(duration) <= float(target),
+               "warning": warning, "requires_full_playback": True,
+               "decision": "review_required"}, handle, indent=2, sort_keys=True)
+    handle.write("\n")
+PY
+
 printf 'duration_seconds=%s\n' "$duration"
 printf 'warning=%s\n' "$warning"
 printf 'contact_sheet=%s\n' "$output_dir/contact-sheet.png"
 printf 'start_frame=%s\n' "$output_dir/start.png"
 printf 'middle_frame=%s\n' "$output_dir/middle.png"
 printf 'end_frame=%s\n' "$output_dir/end.png"
+printf 'review_json=%s\n' "$output_dir/review.json"

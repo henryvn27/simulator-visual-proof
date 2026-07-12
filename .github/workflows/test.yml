@@ -16,10 +16,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate shell scripts
         run: bash -n scripts/capture.sh scripts/review.sh tests/test_capture.sh tests/test_review.sh
+      - name: Validate Python scripts
+        run: python3 -m py_compile scripts/proofctl.py tests/test_proofctl.py
       - name: Run safety tests
         run: |
           tests/test_capture.sh
           tests/test_review.sh
+          tests/test_proofctl.py
       - name: Validate skill metadata
         run: |
           ruby -e '

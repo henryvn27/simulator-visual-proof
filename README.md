@@ -84,7 +84,7 @@ git clone https://github.com/henryvn27/simulator-visual-proof.git \
 - A booted iOS Simulator
 - An agent environment capable of simulator interaction, such as XcodeBuildMCP UI automation, iOS Simulator tooling, Computer Use, or a focused XCUITest
 
-The capture path has no package dependencies. It uses Apple-native `xcrun simctl`, `file`, and Quick Look. The optional deterministic video-review helper uses `ffmpeg` to generate timeline frames and contact sheets.
+The capture path has no package dependencies. It uses Apple-native `xcrun simctl`, `file`, and Quick Look. The deterministic video-review helper uses `ffmpeg`; machine-readable proof contracts and semantic accessibility checks use Python 3's standard library.
 
 ## How recording works
 
@@ -127,6 +127,23 @@ Review every finished video before presenting it:
   --target-max-seconds 12
 ```
 
+Create a proof contract and check the final accessibility state:
+
+```bash
+./scripts/proofctl.py init \
+  --output "/tmp/proof.json" \
+  --claim "Analytics contains populated trends" \
+  --start "Home" \
+  --action "Open Analytics" \
+  --finish "Analytics" \
+  --evidence video+screenshot \
+  --must-contain "Performance Trends"
+
+./scripts/proofctl.py check-state \
+  --plan "/tmp/proof.json" \
+  --accessibility "/tmp/finish-accessibility.json"
+```
+
 ## Honest boundaries
 
 This skill is a proof workflow, not an interaction driver. It coordinates recording with whichever simulator-control tools the agent already has.
@@ -148,6 +165,7 @@ Simulator recordings can still contain sensitive information. The skill instruct
 # Fast safety and argument tests
 tests/test_capture.sh
 tests/test_review.sh
+tests/test_proofctl.py
 
 # Full screenshot + video + poster integration test
 SIMULATOR_UDID="<booted-simulator-udid>" tests/test_capture.sh
@@ -161,8 +179,10 @@ The GitHub workflow runs the portable suite on macOS. The live test remains opt-
 SKILL.md                  Agent instructions and verification policy
 scripts/capture.sh        Dependency-free screenshot/video recorder
 scripts/review.sh         Duration and whole-timeline review artifacts
+scripts/proofctl.py       Proof contracts, state checks, and action logs
 tests/test_capture.sh     Fast tests plus optional live integration test
 tests/test_review.sh      Portable deterministic reviewer tests
+tests/test_proofctl.py    Contract and semantic-state tests
 agents/openai.yaml        Skill-list metadata
 ```
 

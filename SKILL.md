@@ -13,7 +13,21 @@ Treat every artifact as a test result. Never present the first take merely becau
 
 ## Define the proof contract
 
-Before touching the recorder, write a one-sentence internal contract containing:
+Before touching the recorder, create a machine-readable contract:
+
+```bash
+<skill-root>/scripts/proofctl.py init \
+  --output "/tmp/codex-visual-proof/<name>/proof.json" \
+  --claim "<exact claim>" \
+  --start "<recognizable start>" \
+  --action "<first action>" \
+  --finish "<unambiguous finish>" \
+  --evidence video+screenshot \
+  --must-contain "<required finish label>" \
+  --must-not-contain "Loading"
+```
+
+Encode:
 
 - **Claim:** the exact appearance or behavior being proved.
 - **Start:** the recognizable state the viewer should see first.
@@ -42,6 +56,17 @@ Preflight the app before recording:
 5. Navigate to the exact starting state and clear stale searches, sheets, keyboards, scroll positions, alerts, and previous navigation.
 6. Rehearse the route once without recording. Resolve dynamic button coordinates from fresh accessibility state after scrolling or navigation.
 7. Confirm the finish state is reachable and contains the expected data before making the final take.
+
+Export the final accessibility snapshot as JSON and check it against the contract:
+
+```bash
+<skill-root>/scripts/proofctl.py check-state \
+  --plan "/tmp/codex-visual-proof/<name>/proof.json" \
+  --accessibility "/tmp/codex-visual-proof/<name>/finish-accessibility.json" \
+  --output "/tmp/codex-visual-proof/<name>/state-check.json"
+```
+
+Do not accept Finish when this check fails. Use required labels for claimed content and forbidden labels for loading, error, empty, or stale states that invalidate the claim.
 
 If the intended result needs loaded data, wait for the actual content rather than accepting a skeleton, spinner, stale season, or empty state. A technically correct route through the wrong data context is failed proof.
 
@@ -75,6 +100,14 @@ Treat `--duration` as a safety timeout. After `RECORDING_STARTED`:
 4. Wait for real content to replace loading UI.
 5. Hold Finish for one to two seconds, then send Enter immediately.
 
+Log meaningful actions while operating:
+
+```bash
+<skill-root>/scripts/proofctl.py log \
+  --plan "/tmp/codex-visual-proof/<name>/proof.json" \
+  --event tap --detail "View Analytics"
+```
+
 Prefer XcodeBuildMCP accessibility tools, then other available simulator automation, then a focused UI test. Do not use guessed coordinates after content has moved; refresh accessibility state and tap the center of the target frame.
 
 Ordinary proof should be concise: about 3–12 seconds for a focused action and only as long as the visible user flow genuinely requires. A timeout-filled video, idle simulator footage, setup activity, or a jump that omits the claimed action is failed proof.
@@ -106,6 +139,16 @@ Accept only when all are true:
 Reject the take and retry autonomously when any criterion fails. Make up to three meaningfully improved takes by correcting staging, accessibility targeting, timing, recorder backend, or data context. Prefer a clean re-recording. Trim only incidental recorder latency at the boundaries; never remove a failed action, manufacture continuity, replace a missing interaction with a still, or imply that stitched segments are continuous. If truthful stitching is unavoidable because the recorder drops a transition, disclose it and ensure every segment is real captured interaction.
 
 Do not show rejected takes or ask the user to grade them. The user should see only accepted proof or a concise blocker report.
+
+After full playback and semantic state checks pass, mark the accepted artifacts:
+
+```bash
+<skill-root>/scripts/proofctl.py complete \
+  --plan "/tmp/codex-visual-proof/<name>/proof.json" \
+  --screenshot "/tmp/codex-visual-proof/<name>/finish.png" \
+  --video "/tmp/codex-visual-proof/<name>/interaction.mp4" \
+  --review "/tmp/codex-visual-proof/<name>/review/review.json"
+```
 
 ## Troubleshoot independently
 

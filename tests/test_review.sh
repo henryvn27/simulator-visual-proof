@@ -29,6 +29,14 @@ if command -v ffmpeg >/dev/null; then
   test -s "$tmp/review/middle.png"
   test -s "$tmp/review/end.png"
   grep -q 'required_manual_review=' "$tmp/review/review.txt"
+  python3 - "$tmp/review/review.json" <<'PY'
+import json
+import sys
+with open(sys.argv[1]) as handle:
+    review = json.load(handle)
+assert review["decision"] == "review_required"
+assert review["duration_within_target"] is False
+PY
 fi
 
 printf 'review tests passed\n'
