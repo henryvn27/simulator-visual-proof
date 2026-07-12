@@ -49,6 +49,20 @@ def flatten_strings(value):
     return []
 
 
+def markdown_value(value):
+    if value is True:
+        return "yes"
+    if value is False:
+        return "no"
+    if value is None:
+        return "unknown"
+    return str(value).replace("|", "\\|")
+
+
+def seconds_value(value):
+    return "unknown" if value is None else f"{markdown_value(value)}s"
+
+
 def command_init(args):
     contract = {
         "version": 1, "status": "planned", "claim": args.claim,
@@ -138,15 +152,48 @@ def command_complete(args):
     }
     proof_card = args.plan.parent / "proof.md"
     actions = "\n".join(f"- [x] {action}" for action in contract.get("actions", [])) or "- No interaction required"
+    review_data = read_json(args.review) if args.review else {}
+    review_lines = []
+    if review_data:
+        review_lines.extend([
+            "## Review summary",
+            "",
+            "| Check | Value |",
+            "| --- | --- |",
+            f"| Raw duration | {seconds_value(review_data.get('duration_seconds'))} |",
+            f"| Presented clip | {seconds_value(review_data.get('clip_duration_seconds'))} |",
+            f"| Clip range | {seconds_value(review_data.get('clip_start_seconds'))} to {seconds_value(review_data.get('clip_end_seconds'))} |",
+            f"| Storyboard | {markdown_value(review_data.get('storyboard'))} |",
+            f"| Manual playback required | {markdown_value(review_data.get('requires_full_playback'))} |",
+            f"| Warning | {markdown_value(review_data.get('warning'))} |",
+            "",
+        ])
     media = []
     if args.preview:
         media.append(f"![Interaction proof]({args.preview})")
+    storyboard = review_data.get("storyboard")
+    if storyboard and args.review:
+        storyboard_path = Path(storyboard)
+        if not storyboard_path.is_absolute():
+            storyboard_path = args.review.parent / storyboard_path
+        if storyboard_path.is_file():
+            media.append(f"![Storyboard]({storyboard_path})")
     if args.screenshot:
         media.append(f"![Final state]({args.screenshot})")
+    links = []
+    if args.video:
+        links.append(f"- [Raw source video]({args.video})")
+    if args.review:
+        links.append(f"- [Review JSON]({args.review})")
     proof_card.write_text(
         f"# Visual proof: {contract['claim']}\n\n"
         f"**Status:** accepted  \n**Start:** {contract['start']}  \n**Finish:** {contract['finish']}\n\n"
-        f"## Observed actions\n\n{actions}\n\n" + "\n\n".join(media) + "\n"
+        f"## Observed actions\n\n{actions}\n\n"
+        + "\n".join(review_lines)
+        + ("\n" if review_lines else "")
+        + "\n\n".join(media)
+        + ("\n\n## Source artifacts\n\n" + "\n".join(links) if links else "")
+        + "\n"
     )
     contract["artifacts"]["proof_card"] = str(proof_card)
     write_json(args.plan, contract)

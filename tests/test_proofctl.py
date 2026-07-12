@@ -35,8 +35,19 @@ class ProofControlTests(unittest.TestCase):
             video = root / "proof.mp4"
             preview = root / "proof.gif"
             review = root / "review.json"
+            storyboard = root / "contact-sheet.png"
             for artifact in (screenshot, video, preview, review):
                 artifact.write_text("proof")
+            storyboard.write_text("proof")
+            review.write_text(json.dumps({
+                "duration_seconds": 15.0,
+                "clip_duration_seconds": 6.5,
+                "clip_start_seconds": 2.0,
+                "clip_end_seconds": 8.5,
+                "storyboard": "contact-sheet.png",
+                "requires_full_playback": True,
+                "warning": "none",
+            }))
             self.run_tool("complete", "--plan", str(plan), "--screenshot", str(screenshot),
                           "--video", str(video), "--preview", str(preview), "--review", str(review))
             contract = json.loads(plan.read_text())
@@ -44,7 +55,11 @@ class ProofControlTests(unittest.TestCase):
             self.assertEqual(contract["events"][1]["detail"], "Analytics")
             self.assertIn("media_seconds", contract["events"][1])
             self.assertTrue((root / "proof.md").is_file())
-            self.assertIn("Open Analytics", (root / "proof.md").read_text())
+            proof_card = (root / "proof.md").read_text()
+            self.assertIn("Open Analytics", proof_card)
+            self.assertIn("Presented clip | 6.5s", proof_card)
+            self.assertIn("![Storyboard]", proof_card)
+            self.assertIn("Raw source video", proof_card)
 
     def test_missing_required_state_fails(self):
         with tempfile.TemporaryDirectory() as directory:

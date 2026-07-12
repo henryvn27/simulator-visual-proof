@@ -32,7 +32,7 @@ Without this skill, visual verification often ends at “the build passed.” Wi
 3. Rehearse and record the shortest natural interaction.
 4. Map observed actions to the contract and trim idle recording boundaries automatically.
 5. Reject missing actions or bad takes without asking the user to direct it.
-6. Generate one `proof.md` card with inline animation and the final screenshot.
+6. Generate one `proof.md` card with the action checklist, review timing, inline animation, storyboard, source links, and the final screenshot.
 
 ```text
 infer → stage → rehearse → record → inspect → reject or present
@@ -126,7 +126,7 @@ Turn every source recording into directly inspectable proof before presenting it
   --target-max-seconds 12
 ```
 
-When the contract contains a `recording-start` event and logged actions, the reviewer trims only the generated GIF and storyboard to the meaningful action interval. It preserves the full MP4 as the raw source. Completion rejects uncovered planned actions and produces `proof.md`, so the agent has one accepted evidence card to present.
+When the contract contains a `recording-start` event and logged actions, the reviewer trims only the generated GIF and storyboard to the meaningful action interval. It preserves the full MP4 as the raw source. Completion rejects uncovered planned actions and produces `proof.md` with review timing, storyboard, source links, and final-state evidence, so the agent has one accepted evidence card to present.
 
 Create a proof contract and check the final accessibility state:
 
