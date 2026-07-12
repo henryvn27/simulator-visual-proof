@@ -30,11 +30,12 @@ if [[ -n "${SIMULATOR_UDID:-}" ]]; then
   "$capture" screenshot \
     --device "$SIMULATOR_UDID" \
     --output "$tmp/integration.png" >/dev/null
-  "$capture" video \
+  video_output="$($capture video \
     --device "$SIMULATOR_UDID" \
     --output "$tmp/integration.mp4" \
     --duration 1 \
-    --poster "$tmp/integration-poster.png" >/dev/null
+    --poster "$tmp/integration-poster.png")"
+  grep -q 'RECORDING_STARTED' <<<"$video_output"
   file "$tmp/integration.png" | grep -q 'PNG image data'
   file "$tmp/integration.mp4" | grep -Eq 'QuickTime|ISO Media'
   file "$tmp/integration-poster.png" | grep -q 'PNG image data'

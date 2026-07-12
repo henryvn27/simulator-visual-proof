@@ -102,6 +102,7 @@ for _ in {1..100}; do
   sleep 0.1
 done
 (( started == 1 )) || { cat "$log" >&2; die 'recording did not start'; }
+printf 'RECORDING_STARTED %s\n' "$output"
 
 sleep "$duration"
 kill -INT "$pid"

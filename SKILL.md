@@ -37,17 +37,31 @@ If the inspected PNG is blank or black, confirm that the intended app is foregro
 
 ## Record a video
 
-Use video for animation, transitions, gestures, scrolling, navigation, or other behavior a still image cannot prove:
+Use video to show the agent actually operating the app: tapping controls, typing, scrolling, navigating, exercising animations, and completing multi-step flows. First navigate to a sensible starting state and inspect the UI so the interaction path is known.
+
+Start the capture in a long-running terminal session that can yield while it remains active:
 
 ```bash
 <skill-root>/scripts/capture.sh video \
   --device "<simulator-udid>" \
   --output "/tmp/codex-visual-proof/<descriptive-name>.mp4" \
-  --duration 8 \
+  --duration 20 \
   --poster "/tmp/codex-visual-proof/<descriptive-name>-poster.png"
 ```
 
-Start the command, perform the shortest interaction that demonstrates the change during the recording window, and wait for completion. The script waits for the first frame, sends `SIGINT`, waits for finalization, validates the movie, and optionally creates a poster frame. Use a duration from 1 to 60 seconds.
+Wait until the terminal prints `RECORDING_STARTED`. While that same recording session remains active, use the simulator UI tools to perform the shortest clear demonstration:
+
+1. Describe the current UI before tapping.
+2. Tap by accessibility identifier or label when possible.
+3. Type, swipe, scroll, or navigate through the requested behavior.
+4. Pause briefly on the final state so it is readable.
+5. Wait for the recording command to finish and finalize the MP4.
+
+Prefer XcodeBuildMCP accessibility-based snapshot, tap, gesture, and typing tools when enabled. Otherwise use the available iOS Simulator UI automation tools. If interactive tools are unavailable, a focused UI test may drive the same real app flow while the recorder runs. Do not substitute app relaunches or unrelated system activity for the requested interaction.
+
+The script sends `SIGINT` to `simctl`, waits for finalization, validates the movie, and optionally creates a poster frame. Choose a duration from 1 to 60 seconds that leaves enough time for tool round trips. Do not record idle simulator footage and call it interaction proof.
+
+If a tool call takes longer than expected, repeat the recording with a longer duration rather than rushing or omitting the important action. Keep sensitive text, notifications, credentials, and unrelated user data out of the recording.
 
 The script validates that the file is non-empty and readable. For additional metadata when needed:
 
@@ -65,11 +79,12 @@ Inspect representative frames with the available video/image tooling. Re-record 
 - `simulator is not booted`: use `xcrun simctl list devices booted` and pass the exact active UDID.
 - Blank capture: foreground the app, ensure the screen is unlocked, and retry.
 - Recording does not start: run `xcrun simctl io <UDID> enumerate` and confirm the display exists.
+- UI automation reports a missing helper such as `spawn idb ENOENT`: try the XcodeBuildMCP UI tools or a focused UI test; if neither is available, report interaction proof as blocked rather than presenting idle footage.
 - UI cannot reach the changed state: report the navigation, data, authentication, or runtime blocker rather than staging fake proof.
 - Multiple simulators are booted: never substitute the `booted` alias; keep using the build workflow's explicit UDID.
 
 ## Present proof
 
-Show the screenshot inline with an absolute local path. Link the MP4 with an absolute local path when video was required. State the simulator model, screen or flow proved, and any state that could not be reached. A build log, source diff, or uninspected artifact is not visual proof.
+Show the screenshot or poster inline with an absolute local path. Link the playable MP4 with an absolute local path so Henry can watch the agent perform the flow. State the simulator model, the actions shown, the screen or behavior proved, and any state that could not be reached. A build log, source diff, idle recording, or uninspected artifact is not interaction proof.
 
 Treat capture as a strong default, not a hard gate. If simulator capture is unavailable or disproportionate, report why and state the strongest visual or non-visual verification completed instead.

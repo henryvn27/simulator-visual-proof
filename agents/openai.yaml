@@ -1,4 +1,4 @@
 interface:
   display_name: "Simulator Visual Proof"
   short_description: "Capture simulator screenshots and videos"
-  default_prompt: "Use $simulator-visual-proof to capture screenshot and video evidence from the running app."
+  default_prompt: "Use $simulator-visual-proof to record yourself operating the running iOS app and show me the playable video evidence."
