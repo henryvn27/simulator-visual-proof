@@ -13,7 +13,20 @@ Treat every artifact as a test result. Never present the first take merely becau
 
 ## Define the proof contract
 
-Before touching the recorder, create a machine-readable contract:
+Before touching the recorder, create a machine-readable contract. Prefer the coordinator for standard workspaces:
+
+```bash
+<skill-root>/scripts/prove.py init \
+  --output-dir "/tmp/codex-visual-proof/<name>" \
+  --claim "<exact claim>" \
+  --start "<recognizable start>" \
+  --action "<first action>" \
+  --finish "<unambiguous finish>" \
+  --must-contain "<required finish label>" \
+  --must-not-contain "Loading"
+```
+
+Use the lower-level command only when custom paths are needed:
 
 ```bash
 <skill-root>/scripts/proofctl.py init \
@@ -133,6 +146,15 @@ Ordinary proof should be concise: about 3–12 seconds for a focused action and 
 Run the bundled reviewer after every source recording. It creates `proof.gif` for inline presentation and `contact-sheet.png` for playback-free inspection:
 
 ```bash
+<skill-root>/scripts/prove.py review \
+  --plan "/tmp/codex-visual-proof/<name>/proof.json" \
+  --video "/tmp/codex-visual-proof/<name>/interaction.mp4" \
+  --target-max-seconds 12
+```
+
+Use the lower-level reviewer only for nonstandard output paths:
+
+```bash
 <skill-root>/scripts/review.sh video \
   --input "/tmp/codex-visual-proof/<descriptive-name>.mp4" \
   --output-dir "/tmp/codex-visual-proof/<descriptive-name>-review" \
@@ -162,15 +184,18 @@ Do not show rejected takes or ask the user to grade them. The user should see on
 After full playback and semantic state checks pass, mark the accepted artifacts:
 
 ```bash
-<skill-root>/scripts/proofctl.py complete \
-  --plan "/tmp/codex-visual-proof/<name>/proof.json" \
-  --screenshot "/tmp/codex-visual-proof/<name>/finish.png" \
-  --video "/tmp/codex-visual-proof/<name>/interaction.mp4" \
-  --preview "/tmp/codex-visual-proof/<name>/review/proof.gif" \
-  --review "/tmp/codex-visual-proof/<name>/review/review.json"
+<skill-root>/scripts/prove.py complete \
+  --plan "/tmp/codex-visual-proof/<name>/proof.json"
 ```
 
-Completion rejects uncovered planned actions or missing artifacts and writes `proof.md` beside the contract. Present that proof card rather than assembling evidence manually.
+Completion rejects uncovered planned actions or missing artifacts and writes `proof.md` beside the contract. Check readiness after interruptions or before presenting:
+
+```bash
+<skill-root>/scripts/prove.py status \
+  --plan "/tmp/codex-visual-proof/<name>/proof.json"
+```
+
+Present the proof card rather than assembling evidence manually.
 
 ## Troubleshoot independently
 

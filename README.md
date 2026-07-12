@@ -125,11 +125,21 @@ Screenshots use the same safety path:
 Turn every source recording into directly inspectable proof before presenting it:
 
 ```bash
-./scripts/review.sh video \
-  --input "/tmp/codex-visual-proof/checkout-flow.mp4" \
-  --output-dir "/tmp/codex-visual-proof/checkout-flow-review" \
+./scripts/prove.py init \
+  --output-dir "/tmp/codex-visual-proof/checkout-flow" \
+  --claim "Checkout flow reaches confirmation" \
+  --start "Cart" \
+  --action "Submit checkout" \
+  --finish "Confirmation" \
+  --must-contain "Order confirmed"
+
+./scripts/prove.py review \
   --plan "/tmp/codex-visual-proof/checkout-flow/proof.json" \
+  --video "/tmp/codex-visual-proof/checkout-flow/interaction.mp4" \
   --target-max-seconds 12
+
+./scripts/prove.py complete \
+  --plan "/tmp/codex-visual-proof/checkout-flow/proof.json"
 ```
 
 When the contract contains a `recording-start` event and logged actions, the reviewer trims only the generated GIF and storyboard to the meaningful action interval. It preserves the full MP4 as the raw source, and flags suspicious proof such as static frames, black footage, or overlong clips. Completion rejects uncovered planned actions and produces `proof.md` with review timing, storyboard, source links, and final-state evidence, so the agent has one accepted evidence card to present.
@@ -187,9 +197,11 @@ SKILL.md                  Agent instructions and verification policy
 scripts/capture.sh        Dependency-free screenshot/video recorder
 scripts/review.sh         Inline GIF, storyboard, and review artifacts
 scripts/proofctl.py       Proof contracts, state checks, and action logs
+scripts/prove.py          Standard workspace coordinator for init/review/complete/status
 tests/test_capture.sh     Fast tests plus optional live integration test
 tests/test_review.sh      Portable deterministic reviewer tests
 tests/test_proofctl.py    Contract and semantic-state tests
+tests/test_prove.py       Coordinator tests
 agents/openai.yaml        Skill-list metadata
 ```
 

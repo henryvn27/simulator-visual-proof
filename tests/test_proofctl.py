@@ -50,6 +50,8 @@ class ProofControlTests(unittest.TestCase):
             }))
             self.run_tool("complete", "--plan", str(plan), "--screenshot", str(screenshot),
                           "--video", str(video), "--preview", str(preview), "--review", str(review))
+            status = self.run_tool("status", "--plan", str(plan))
+            self.assertTrue(json.loads(status.stdout)["accepted"])
             contract = json.loads(plan.read_text())
             self.assertEqual(contract["status"], "accepted")
             self.assertEqual(contract["events"][1]["detail"], "Analytics")
@@ -97,6 +99,8 @@ class ProofControlTests(unittest.TestCase):
             blocked = self.run_tool("complete", "--plan", str(plan),
                                     "--screenshot", str(screenshot), expected=1)
             self.assertIn("Type cuties", blocked.stderr)
+            status = self.run_tool("status", "--plan", str(plan), expected=3)
+            self.assertIn("Type cuties", status.stdout)
 
 
 if __name__ == "__main__":

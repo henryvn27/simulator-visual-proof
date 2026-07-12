@@ -63,6 +63,40 @@ def seconds_value(value):
     return "unknown" if value is None else f"{markdown_value(value)}s"
 
 
+def proof_status(contract):
+    evidence = contract.get("evidence")
+    artifacts = contract.get("artifacts", {})
+    has_semantic_constraints = bool(contract.get("must_contain") or contract.get("must_not_contain"))
+    semantic_ok = not has_semantic_constraints or contract.get("state_check", {}).get("accepted") is True
+    covered = {item.casefold() for event in contract.get("events", [])
+               for item in event.get("covers", [])}
+    uncovered = [action for action in contract.get("actions", []) if action.casefold() not in covered]
+    required = []
+    if evidence in ("screenshot", "video+screenshot"):
+        required.append("screenshot")
+    if evidence in ("video", "video+screenshot"):
+        required.extend(["video", "review", "preview"])
+    missing_artifacts = []
+    for name in required:
+        value = artifacts.get(name)
+        if not value or not Path(value).is_file() or Path(value).stat().st_size == 0:
+            missing_artifacts.append(name)
+    review_warnings = []
+    review_path = artifacts.get("review")
+    if review_path and Path(review_path).is_file():
+        review_warnings = read_json(Path(review_path)).get("warnings", [])
+    accepted = contract.get("status") == "accepted" and semantic_ok and not uncovered and not missing_artifacts
+    return {
+        "accepted": accepted,
+        "status": contract.get("status", "unknown"),
+        "semantic_state_ok": semantic_ok,
+        "uncovered_actions": uncovered,
+        "missing_artifacts": missing_artifacts,
+        "review_warnings": review_warnings,
+        "proof_card": artifacts.get("proof_card"),
+    }
+
+
 def command_init(args):
     contract = {
         "version": 1, "status": "planned", "claim": args.claim,
@@ -201,6 +235,12 @@ def command_complete(args):
     return 0
 
 
+def command_status(args):
+    status = proof_status(read_json(args.plan))
+    print(json.dumps(status, indent=2, sort_keys=True))
+    return 0 if status["accepted"] else 3
+
+
 def build_parser():
     root = argparse.ArgumentParser(description=__doc__)
     commands = root.add_subparsers(dest="command", required=True)
@@ -232,6 +272,9 @@ def build_parser():
     complete.add_argument("--preview", type=absolute_path)
     complete.add_argument("--review", type=absolute_path)
     complete.set_defaults(function=command_complete)
+    status = commands.add_parser("status")
+    status.add_argument("--plan", type=absolute_path, required=True)
+    status.set_defaults(function=command_status)
     return root
 
 
