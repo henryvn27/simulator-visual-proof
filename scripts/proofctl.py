@@ -87,10 +87,19 @@ def command_check_state(args):
 def command_log(args):
     contract = read_json(args.plan)
     started = float(contract.get("started_at_epoch", time.time()))
-    contract.setdefault("events", []).append({
-        "seconds": round(time.time() - started, 3),
-        "event": args.event, "detail": args.detail,
-    })
+    events = contract.setdefault("events", [])
+    seconds = round(time.time() - started, 3)
+    recording_start = next((event["seconds"] for event in reversed(events)
+                            if event["event"] == "recording-start"), None)
+    event = {
+        "seconds": seconds, "event": args.event, "detail": args.detail,
+        "covers": args.covers,
+    }
+    if args.event == "recording-start":
+        event["media_seconds"] = 0
+    elif recording_start is not None:
+        event["media_seconds"] = round(seconds - recording_start, 3)
+    events.append(event)
     contract["status"] = "recording"
     write_json(args.plan, contract)
     return 0
@@ -101,6 +110,11 @@ def command_complete(args):
     has_semantic_constraints = bool(contract.get("must_contain") or contract.get("must_not_contain"))
     if has_semantic_constraints and not contract.get("state_check", {}).get("accepted"):
         raise SystemExit("error: latest semantic state check has not passed")
+    covered = {item.casefold() for event in contract.get("events", [])
+               for item in event.get("covers", [])}
+    uncovered = [action for action in contract.get("actions", []) if action.casefold() not in covered]
+    if uncovered:
+        raise SystemExit("error: planned actions lack observed coverage: " + ", ".join(uncovered))
     evidence = contract.get("evidence")
     required = []
     if evidence in ("screenshot", "video+screenshot"):
@@ -122,8 +136,21 @@ def command_complete(args):
         "preview": str(args.preview) if args.preview else None,
         "review": str(args.review) if args.review else None,
     }
+    proof_card = args.plan.parent / "proof.md"
+    actions = "\n".join(f"- [x] {action}" for action in contract.get("actions", [])) or "- No interaction required"
+    media = []
+    if args.preview:
+        media.append(f"![Interaction proof]({args.preview})")
+    if args.screenshot:
+        media.append(f"![Final state]({args.screenshot})")
+    proof_card.write_text(
+        f"# Visual proof: {contract['claim']}\n\n"
+        f"**Status:** accepted  \n**Start:** {contract['start']}  \n**Finish:** {contract['finish']}\n\n"
+        f"## Observed actions\n\n{actions}\n\n" + "\n\n".join(media) + "\n"
+    )
+    contract["artifacts"]["proof_card"] = str(proof_card)
     write_json(args.plan, contract)
-    print(args.plan)
+    print(proof_card)
     return 0
 
 
@@ -149,6 +176,7 @@ def build_parser():
     log.add_argument("--plan", type=absolute_path, required=True)
     log.add_argument("--event", required=True)
     log.add_argument("--detail", default="")
+    log.add_argument("--covers", action="append", default=[])
     log.set_defaults(function=command_log)
     complete = commands.add_parser("complete")
     complete.add_argument("--plan", type=absolute_path, required=True)

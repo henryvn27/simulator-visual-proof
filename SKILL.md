@@ -94,6 +94,12 @@ Use video for navigation, typing, gestures, transitions, animations, or multi-st
 
 Treat `--duration` as a safety timeout. After `RECORDING_STARTED`:
 
+```bash
+<skill-root>/scripts/proofctl.py log \
+  --plan "/tmp/codex-visual-proof/<name>/proof.json" \
+  --event recording-start
+```
+
 1. Hold Start for roughly one second so it is recognizable.
 2. Perform the shortest natural flow immediately, using accessibility labels or identifiers when possible.
 3. Pause only where the viewer needs to read typed text or a result.
@@ -105,8 +111,10 @@ Log meaningful actions while operating:
 ```bash
 <skill-root>/scripts/proofctl.py log \
   --plan "/tmp/codex-visual-proof/<name>/proof.json" \
-  --event tap --detail "View Analytics"
+  --event tap --detail "View Analytics" --covers "Open Analytics"
 ```
+
+Use `--covers` with the exact matching `--action` text from the contract. Log the verified Finish state as the final event. The recording-start marker automatically gives later events media-relative timestamps; the reviewer uses them to remove idle boundaries without altering the raw capture.
 
 Prefer XcodeBuildMCP accessibility tools, then other available simulator automation, then a focused UI test. Do not use guessed coordinates after content has moved; refresh accessibility state and tap the center of the target frame.
 
@@ -120,6 +128,7 @@ Run the bundled reviewer after every source recording. It creates `proof.gif` fo
 <skill-root>/scripts/review.sh video \
   --input "/tmp/codex-visual-proof/<descriptive-name>.mp4" \
   --output-dir "/tmp/codex-visual-proof/<descriptive-name>-review" \
+  --plan "/tmp/codex-visual-proof/<name>/proof.json" \
   --target-max-seconds 12
 ```
 
@@ -151,6 +160,8 @@ After full playback and semantic state checks pass, mark the accepted artifacts:
   --review "/tmp/codex-visual-proof/<name>/review/review.json"
 ```
 
+Completion rejects uncovered planned actions or missing artifacts and writes `proof.md` beside the contract. Present that proof card rather than assembling evidence manually.
+
 ## Troubleshoot independently
 
 - Blank capture: foreground the intended app, unlock the simulator, and retry.
@@ -163,6 +174,6 @@ After full playback and semantic state checks pass, mark the accepted artifacts:
 
 ## Present accepted proof
 
-Show `proof.gif` inline using an absolute path for interaction evidence, followed by the final full-resolution screenshot. Include the storyboard when the GIF is too fast, too large, or unsupported. Link the MP4 only as an optional raw artifact; never make it the sole or primary proof. State the simulator model, the short action sequence, the result proved, and any material limitation. Do not narrate failed takes unless they expose a genuine remaining limitation.
+Open the generated `proof.md` and present its accepted GIF and final screenshot. Include the storyboard when the GIF is too fast, too large, or unsupported. Link the MP4 only as an optional raw artifact; never make it the sole or primary proof. State the simulator model, the short action sequence, the result proved, and any material limitation. Do not narrate failed takes unless they expose a genuine remaining limitation.
 
 A build log, source diff, unreviewed artifact, loading screen, idle recording, or technically valid file that does not prove the claim is not visual proof.

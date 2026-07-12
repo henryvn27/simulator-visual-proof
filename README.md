@@ -30,9 +30,9 @@ Without this skill, visual verification often ends at “the build passed.” Wi
 1. Infer the strongest proof from the change.
 2. Stage the real app with the correct account, season, team, and data.
 3. Rehearse and record the shortest natural interaction.
-4. Inspect the complete timeline instead of trusting file existence.
-5. Reject bad takes and retry without asking the user to direct it.
-6. Show an inline animated proof, storyboard, and final screenshot; keep MP4 as optional raw evidence.
+4. Map observed actions to the contract and trim idle recording boundaries automatically.
+5. Reject missing actions or bad takes without asking the user to direct it.
+6. Generate one `proof.md` card with inline animation and the final screenshot.
 
 ```text
 infer → stage → rehearse → record → inspect → reject or present
@@ -122,10 +122,11 @@ Turn every source recording into directly inspectable proof before presenting it
 ./scripts/review.sh video \
   --input "/tmp/codex-visual-proof/checkout-flow.mp4" \
   --output-dir "/tmp/codex-visual-proof/checkout-flow-review" \
+  --plan "/tmp/codex-visual-proof/checkout-flow/proof.json" \
   --target-max-seconds 12
 ```
 
-This produces `proof.gif` for inline display, `contact-sheet.png` for frame-by-frame inspection, start/middle/end frames, and structured review metadata. The MP4 is retained only as the raw capture source.
+When the contract contains a `recording-start` event and logged actions, the reviewer trims only the generated GIF and storyboard to the meaningful action interval. It preserves the full MP4 as the raw source. Completion rejects uncovered planned actions and produces `proof.md`, so the agent has one accepted evidence card to present.
 
 Create a proof contract and check the final accessibility state:
 

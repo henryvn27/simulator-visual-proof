@@ -21,8 +21,9 @@ expect_failure "$review" video --input "$tmp/missing.mp4" --output-dir "$tmp/rev
 grep -q -- 'missing or empty' "$tmp/stderr"
 
 if command -v ffmpeg >/dev/null; then
-  ffmpeg -y -f lavfi -i color=c=blue:s=320x240:d=2 -r 10 "$tmp/input.mp4" >/dev/null 2>&1
-  output="$($review video --input "$tmp/input.mp4" --output-dir "$tmp/review" --target-max-seconds 1)"
+  ffmpeg -y -f lavfi -i color=c=blue:s=320x240:d=4 -r 10 "$tmp/input.mp4" >/dev/null 2>&1
+  printf '%s\n' '{"events":[{"event":"tap","detail":"Open Analytics","media_seconds":1.0}]}' >"$tmp/proof.json"
+  output="$($review video --input "$tmp/input.mp4" --output-dir "$tmp/review" --plan "$tmp/proof.json" --target-max-seconds 1)"
   grep -q 'exceeds target' <<<"$output"
   test -s "$tmp/review/contact-sheet.png"
   test -s "$tmp/review/proof.gif"
@@ -40,6 +41,8 @@ assert review["decision"] == "review_required"
 assert review["duration_within_target"] is False
 assert review["primary_presentation"] == "proof.gif"
 assert review["storyboard"] == "contact-sheet.png"
+assert review["clip_start_seconds"] == 0.25
+assert review["clip_end_seconds"] == 2.25
 PY
 fi
 

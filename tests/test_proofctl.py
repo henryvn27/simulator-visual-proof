@@ -28,7 +28,9 @@ class ProofControlTests(unittest.TestCase):
             checked = self.run_tool("check-state", "--plan", str(plan),
                                     "--accessibility", str(accessibility))
             self.assertTrue(json.loads(checked.stdout)["accepted"])
-            self.run_tool("log", "--plan", str(plan), "--event", "tap", "--detail", "Analytics")
+            self.run_tool("log", "--plan", str(plan), "--event", "recording-start")
+            self.run_tool("log", "--plan", str(plan), "--event", "tap", "--detail", "Analytics",
+                          "--covers", "Open Analytics")
             screenshot = root / "proof.png"
             video = root / "proof.mp4"
             preview = root / "proof.gif"
@@ -39,7 +41,10 @@ class ProofControlTests(unittest.TestCase):
                           "--video", str(video), "--preview", str(preview), "--review", str(review))
             contract = json.loads(plan.read_text())
             self.assertEqual(contract["status"], "accepted")
-            self.assertEqual(contract["events"][0]["detail"], "Analytics")
+            self.assertEqual(contract["events"][1]["detail"], "Analytics")
+            self.assertIn("media_seconds", contract["events"][1])
+            self.assertTrue((root / "proof.md").is_file())
+            self.assertIn("Open Analytics", (root / "proof.md").read_text())
 
     def test_missing_required_state_fails(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -65,6 +70,18 @@ class ProofControlTests(unittest.TestCase):
                           "--finish", "Analytics", "--evidence", "video")
             blocked = self.run_tool("complete", "--plan", str(plan), expected=1)
             self.assertIn("video is required", blocked.stderr)
+
+    def test_complete_rejects_uncovered_planned_action(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            plan = root / "proof.json"
+            self.run_tool("init", "--output", str(plan), "--claim", "Search works", "--start", "Home",
+                          "--action", "Type cuties", "--finish", "Results", "--evidence", "screenshot")
+            screenshot = root / "proof.png"
+            screenshot.write_text("proof")
+            blocked = self.run_tool("complete", "--plan", str(plan),
+                                    "--screenshot", str(screenshot), expected=1)
+            self.assertIn("Type cuties", blocked.stderr)
 
 
 if __name__ == "__main__":
