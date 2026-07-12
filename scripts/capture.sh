@@ -4,6 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
+  capture.sh doctor
   capture.sh screenshot --device <UDID> --output <file.png>
   capture.sh video --device <UDID> --output <file.mp4> [--duration <seconds>] [--stop-on-enter] [--poster <file.png>]
 
@@ -29,6 +30,39 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
 fi
 mode="$1"
 shift
+
+if [[ "$mode" == "doctor" ]]; then
+  status=0
+  for tool in xcrun file; do
+    if command -v "$tool" >/dev/null; then
+      printf 'ok: %s found\n' "$tool"
+    else
+      printf 'error: %s is required\n' "$tool" >&2
+      status=1
+    fi
+  done
+  for tool in ffmpeg qlmanage; do
+    if command -v "$tool" >/dev/null; then
+      printf 'ok: %s found\n' "$tool"
+    else
+      printf 'warn: %s not found; related optional proof features may be unavailable\n' "$tool"
+    fi
+  done
+  if command -v xcrun >/dev/null; then
+    booted="$(xcrun simctl list devices booted 2>/dev/null | grep -E '\([0-9A-Fa-f-]{36}\)' || true)"
+    count="$(printf '%s\n' "$booted" | sed '/^$/d' | wc -l | tr -d ' ')"
+    if [[ "$count" == "0" ]]; then
+      printf 'warn: no booted iOS Simulator devices found\n'
+    elif [[ "$count" == "1" ]]; then
+      printf 'ok: one booted simulator found\n'
+      printf '%s\n' "$booted"
+    else
+      printf 'warn: multiple booted simulators found; pass an exact UDID\n'
+      printf '%s\n' "$booted"
+    fi
+  fi
+  exit "$status"
+fi
 
 device=""
 output=""

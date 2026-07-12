@@ -89,6 +89,12 @@ The capture path has no package dependencies. It uses Apple-native `xcrun simctl
 The included recorder is also usable directly:
 
 ```bash
+./scripts/capture.sh doctor
+```
+
+The doctor reports required capture tools, optional review helpers, and booted simulator ambiguity before the agent starts recording.
+
+```bash
 ./scripts/capture.sh video \
   --device "<simulator-udid>" \
   --output "/tmp/codex-visual-proof/checkout-flow.mp4" \
@@ -126,7 +132,7 @@ Turn every source recording into directly inspectable proof before presenting it
   --target-max-seconds 12
 ```
 
-When the contract contains a `recording-start` event and logged actions, the reviewer trims only the generated GIF and storyboard to the meaningful action interval. It preserves the full MP4 as the raw source. Completion rejects uncovered planned actions and produces `proof.md` with review timing, storyboard, source links, and final-state evidence, so the agent has one accepted evidence card to present.
+When the contract contains a `recording-start` event and logged actions, the reviewer trims only the generated GIF and storyboard to the meaningful action interval. It preserves the full MP4 as the raw source, and flags suspicious proof such as static frames, black footage, or overlong clips. Completion rejects uncovered planned actions and produces `proof.md` with review timing, storyboard, source links, and final-state evidence, so the agent has one accepted evidence card to present.
 
 Create a proof contract and check the final accessibility state:
 

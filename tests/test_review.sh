@@ -25,6 +25,7 @@ if command -v ffmpeg >/dev/null; then
   printf '%s\n' '{"events":[{"event":"tap","detail":"Open Analytics","media_seconds":1.0}]}' >"$tmp/proof.json"
   output="$($review video --input "$tmp/input.mp4" --output-dir "$tmp/review" --plan "$tmp/proof.json" --target-max-seconds 1)"
   grep -q 'exceeds target' <<<"$output"
+  grep -q 'identical' <<<"$output"
   test -s "$tmp/review/contact-sheet.png"
   test -s "$tmp/review/proof.gif"
   file "$tmp/review/proof.gif" | grep -q 'GIF image data'
@@ -39,6 +40,7 @@ with open(sys.argv[1]) as handle:
     review = json.load(handle)
 assert review["decision"] == "review_required"
 assert review["duration_within_target"] is False
+assert any("identical" in warning for warning in review["warnings"])
 assert review["primary_presentation"] == "proof.gif"
 assert review["storyboard"] == "contact-sheet.png"
 assert review["clip_start_seconds"] == 0.25

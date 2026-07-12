@@ -14,7 +14,8 @@ expect_failure() {
   fi
 }
 
-"$capture" --help >/dev/null
+"$capture" --help >"$tmp/help"
+grep -q 'capture.sh doctor' "$tmp/help"
 expect_failure "$capture" screenshot --output "$tmp/proof.png"
 grep -q -- '--device is required' "$tmp/stderr"
 expect_failure "$capture" screenshot --device invalid --output "$tmp/proof.png"

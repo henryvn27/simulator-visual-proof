@@ -39,6 +39,14 @@ Infer unspecified details. Prefer the device already used by the build workflow,
 
 ## Choose and prepare the simulator
 
+Run the environment doctor when simulator state or capture tooling is uncertain:
+
+```bash
+<skill-root>/scripts/capture.sh doctor
+```
+
+Use the output to fix missing required tools, identify optional review limitations, and choose an exact simulator UDID. Warnings are not automatic blockers; they explain what proof strength may be reduced.
+
 List booted devices:
 
 ```bash
@@ -133,6 +141,8 @@ Run the bundled reviewer after every source recording. It creates `proof.gif` fo
 ```
 
 Open `proof.gif`, `contact-sheet.png`, and the start, middle, and end frames. Inspect the complete source recording when playback works; the storyboard remains independently reviewable when MP4 playback does not. Sampled frames never excuse missing actions.
+
+Read `review.json` before accepting. Treat warnings about identical frames, black frames, or duration as reasons to inspect closely and usually retry. A warning is not a hard failure when the source recording still honestly proves the claim, but it must not be ignored.
 
 Accept only when all are true:
 

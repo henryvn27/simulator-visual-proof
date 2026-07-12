@@ -83,9 +83,23 @@ ffmpeg -y -ss "$clip_start" -t "$clip_duration" -i "$input" -filter_complex \
   "fps=8,scale=420:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=bayer:bayer_scale=3" \
   -loop 0 "$output_dir/proof.gif" >/dev/null 2>&1
 
-warning="none"
+warnings=()
 if awk -v d="$clip_duration" -v m="$target_max" 'BEGIN { exit !(d > m) }'; then
-  warning="proof duration ${clip_duration}s exceeds target ${target_max}s; inspect for avoidable idle time"
+  warnings+=("proof duration ${clip_duration}s exceeds target ${target_max}s; inspect for avoidable idle time")
+fi
+if cmp -s "$output_dir/start.png" "$output_dir/middle.png" && cmp -s "$output_dir/middle.png" "$output_dir/end.png"; then
+  warnings+=("start, middle, and end frames are identical; inspect for idle or frozen footage")
+fi
+if ffmpeg -hide_banner -v info -ss "$clip_start" -t "$clip_duration" -i "$input" \
+  -vf "blackframe=amount=98:threshold=32" -an -f null - 2>&1 | grep -q 'blackframe:'; then
+  warnings+=("black frames detected; inspect for blank or obscured simulator footage")
+fi
+warning="none"
+if [[ ${#warnings[@]} -gt 0 ]]; then
+  warning="${warnings[0]}"
+  for item in "${warnings[@]:1}"; do
+    warning="$warning | $item"
+  done
 fi
 
 cat >"$output_dir/review.txt" <<EOF
@@ -100,6 +114,7 @@ import json
 import sys
 
 path, duration, target, warning, clip_start, clip_end = sys.argv[1:]
+warnings = [] if warning == "none" else warning.split(" | ")
 with open(path, "w") as handle:
     json.dump({"duration_seconds": float(duration),
                "target_max_seconds": float(target),
@@ -107,7 +122,7 @@ with open(path, "w") as handle:
                "clip_start_seconds": float(clip_start),
                "clip_end_seconds": float(clip_end),
                "clip_duration_seconds": float(clip_end) - float(clip_start),
-               "warning": warning, "requires_full_playback": True,
+               "warning": warning, "warnings": warnings, "requires_full_playback": True,
                "primary_presentation": "proof.gif",
                "storyboard": "contact-sheet.png",
                "decision": "review_required"}, handle, indent=2, sort_keys=True)
