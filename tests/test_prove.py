@@ -29,6 +29,11 @@ class ProveTests(unittest.TestCase):
             self.assertIn("Search cuties", parsed["uncovered_actions"])
             self.assertIn("screenshot", parsed["missing_artifacts"])
 
+    def test_handoff_forwards_to_proof_control(self):
+        result = self.run_tool("handoff", "--plan", "/tmp/missing-proof.json",
+                               "--destination", "github", expected=1)
+        self.assertIn("missing file", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

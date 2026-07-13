@@ -197,6 +197,25 @@ Completion rejects uncovered planned actions or missing artifacts and writes `pr
 
 Present the proof card rather than assembling evidence manually.
 
+## Publish proof with the work
+
+When a Linear issue, GitHub pull request, merge, or commit handoff exists, include accepted visual proof there without waiting for the user to request it. Prepare the attachment manifest:
+
+```bash
+<skill-root>/scripts/prove.py handoff \
+  --plan "/tmp/codex-visual-proof/<name>/proof.json" \
+  --destination linear \
+  --destination github
+```
+
+Read `handoff.json`, then use the destination's available native attachment or upload tool. Prefer the GIF, then the final screenshot; include the MP4 only when motion detail needs the raw source. Add the concise claim/start/finish text alongside the media.
+
+- **Linear:** attach the GIF and final screenshot to the issue update or completion comment when the connector supports file uploads. Otherwise add accessible hosted links. Never paste local filesystem paths into Linear.
+- **GitHub PR or merge:** place the GIF and screenshot in the PR description, verification comment, or merge handoff when an upload or durable repository URL is available.
+- **Git commit:** Git has no attachment channel. If proof assets are already intentionally tracked, reference their repository paths in the commit body. Otherwise put proof in the associated PR or issue and reference that URL; do not add binary artifacts to product history solely to decorate a commit.
+
+Publication is best effort and must not change accepted proof into a hard gate. If the destination, upload capability, or permission is unavailable, keep the local proof card, state that publication was unavailable, and finish with the strongest accessible evidence. Never claim local paths are remotely viewable, expose private simulator data, or upload rejected takes.
+
 ## Troubleshoot independently
 
 - Blank capture: foreground the intended app, unlock the simulator, and retry.

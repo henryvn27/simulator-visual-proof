@@ -241,6 +241,32 @@ def command_status(args):
     return 0 if status["accepted"] else 3
 
 
+def command_handoff(args):
+    contract = read_json(args.plan)
+    if not proof_status(contract)["accepted"]:
+        raise SystemExit("error: proof must be accepted before handoff")
+    artifacts = contract.get("artifacts", {})
+    selected = [name for name in ("preview", "screenshot", "video") if artifacts.get(name)]
+    destinations = {
+        destination: {
+            "status": "ready_for_native_upload",
+            "artifacts": [artifacts[name] for name in selected],
+            "markdown": (f"Visual proof: {contract['claim']}\n\n"
+                         f"Start: {contract['start']}  \nFinish: {contract['finish']}"),
+        }
+        for destination in args.destination
+    }
+    manifest = args.output or args.plan.parent / "handoff.json"
+    write_json(manifest, {
+        "claim": contract["claim"], "destinations": destinations,
+        "preferred_order": selected, "proof_card": artifacts.get("proof_card"),
+    })
+    contract.setdefault("artifacts", {})["handoff"] = str(manifest)
+    write_json(args.plan, contract)
+    print(manifest)
+    return 0
+
+
 def build_parser():
     root = argparse.ArgumentParser(description=__doc__)
     commands = root.add_subparsers(dest="command", required=True)
@@ -275,6 +301,12 @@ def build_parser():
     status = commands.add_parser("status")
     status.add_argument("--plan", type=absolute_path, required=True)
     status.set_defaults(function=command_status)
+    handoff = commands.add_parser("handoff")
+    handoff.add_argument("--plan", type=absolute_path, required=True)
+    handoff.add_argument("--destination", action="append",
+                         choices=("linear", "github"), required=True)
+    handoff.add_argument("--output", type=absolute_path)
+    handoff.set_defaults(function=command_handoff)
     return root
 
 

@@ -66,6 +66,13 @@ def command_status(args):
     return run(PROOFCTL, "status", "--plan", args.plan).returncode
 
 
+def command_handoff(args):
+    command = [PROOFCTL, "handoff", "--plan", args.plan]
+    for destination in args.destination:
+        command.extend(["--destination", destination])
+    return run(*command).returncode
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -95,6 +102,12 @@ def build_parser():
     status = commands.add_parser("status")
     status.add_argument("--plan", type=absolute_path, required=True)
     status.set_defaults(function=command_status)
+
+    handoff = commands.add_parser("handoff")
+    handoff.add_argument("--plan", type=absolute_path, required=True)
+    handoff.add_argument("--destination", action="append",
+                         choices=("linear", "github"), required=True)
+    handoff.set_defaults(function=command_handoff)
     return parser
 
 

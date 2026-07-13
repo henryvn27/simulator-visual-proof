@@ -62,6 +62,14 @@ class ProofControlTests(unittest.TestCase):
             self.assertIn("Presented clip | 6.5s", proof_card)
             self.assertIn("![Storyboard]", proof_card)
             self.assertIn("Raw source video", proof_card)
+            self.run_tool("handoff", "--plan", str(plan), "--destination", "linear",
+                          "--destination", "github")
+            handoff = json.loads((root / "handoff.json").read_text())
+            self.assertEqual(handoff["preferred_order"], ["preview", "screenshot", "video"])
+            self.assertEqual(handoff["destinations"]["linear"]["status"],
+                             "ready_for_native_upload")
+            self.assertIn("Analytics contains data",
+                          handoff["destinations"]["github"]["markdown"])
 
     def test_missing_required_state_fails(self):
         with tempfile.TemporaryDirectory() as directory:
