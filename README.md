@@ -33,7 +33,7 @@ Without this skill, visual verification often ends at “the build passed.” Wi
 4. Map observed actions to the contract and trim idle recording boundaries automatically.
 5. Reject missing actions or bad takes without asking the user to direct it.
 6. Generate one `proof.md` card with the action checklist, review timing, inline animation, storyboard, source links, and the final screenshot.
-7. Prepare accepted media for native attachment to Linear and GitHub handoffs when those destinations are available.
+7. Prepare accepted media for native attachment to GitHub issue and pull-request handoffs when those destinations are available.
 
 ```text
 infer → stage → rehearse → record → inspect → reject or present
@@ -144,11 +144,10 @@ Turn every source recording into directly inspectable proof before presenting it
 
 ./scripts/prove.py handoff \
   --plan "/tmp/codex-visual-proof/checkout-flow/proof.json" \
-  --destination linear \
   --destination github
 ```
 
-When the contract contains a `recording-start` event and logged actions, the reviewer trims only the generated GIF and storyboard to the meaningful action interval. It preserves the full MP4 as the raw source, and flags suspicious proof such as static frames, black footage, or overlong clips. Completion rejects uncovered planned actions and produces `proof.md` with review timing, storyboard, source links, and final-state evidence. Handoff then writes `handoff.json`, telling the agent which accepted artifacts to attach to Linear or GitHub with the destination's native upload tools. Local paths are never represented as remotely visible attachments.
+When the contract contains a `recording-start` event and logged actions, the reviewer trims only the generated GIF and storyboard to the meaningful action interval. It preserves the full MP4 as the raw source, and flags suspicious proof such as static frames, black footage, or overlong clips. Completion rejects uncovered planned actions and produces `proof.md` with review timing, storyboard, source links, and final-state evidence. Handoff then writes `handoff.json`, telling the agent which accepted artifacts to attach to GitHub with the destination's native upload tools. Local paths are never represented as remotely visible attachments.
 
 Create a proof contract and check the final accessibility state:
 
