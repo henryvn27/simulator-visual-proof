@@ -106,7 +106,7 @@ def build_parser():
     handoff = commands.add_parser("handoff")
     handoff.add_argument("--plan", type=absolute_path, required=True)
     handoff.add_argument("--destination", action="append",
-                         choices=("linear", "github"), required=True)
+                         choices=("github",), required=True)
     handoff.set_defaults(function=command_handoff)
     return parser
 
